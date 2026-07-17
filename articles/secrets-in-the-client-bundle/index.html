@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Verify a Webhook Signature Before You Trust It — ShipTested</title>
-<meta name="description" content="A webhook endpoint is a public URL anyone can POST to. Verify the HMAC over the raw body and compare in constant time before you grant access — with a runnable red/green test for Next.js, Lemon Squeezy, and Stripe.">
-<meta property="og:title" content="Verify a Webhook Signature Before You Trust It">
-<meta property="og:description" content="A webhook endpoint is a public URL anyone can POST to. Verify the HMAC over the raw body and compare in constant time before you grant access — with a runnable red/green test for Next.js, Lemon Squeezy, and Stripe.">
+<title>The NEXT_PUBLIC_ Prefix Can Ship Your Secret Keys to the Browser — ShipTested</title>
+<meta name="description" content="The Supabase anon key belongs in the browser; the service-role key never does. One NEXT_PUBLIC_ prefix or one Client Component can inline a secret into the bundle every visitor downloads. Find out which secrets your build exposes — with a runnable check.">
+<meta property="og:title" content="The NEXT_PUBLIC_ Prefix Can Ship Your Secret Keys to the Browser">
+<meta property="og:description" content="The Supabase anon key belongs in the browser; the service-role key never does. One NEXT_PUBLIC_ prefix or one Client Component can inline a secret into the bundle every visitor downloads. Find out which secrets your build exposes — with a runnable check.">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://shiptested.github.io/og-image.png">
-<meta property="og:url" content="https://shiptested.github.io/articles/verify-webhook-signature/">
+<meta property="og:url" content="https://shiptested.github.io/articles/secrets-in-the-client-bundle/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://shiptested.github.io/og-image.png">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -63,7 +63,7 @@
 </style>
 </head>
 <body>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Verify a Webhook Signature Before You Trust It", "description": "A webhook endpoint is a public URL anyone can POST to. Verify the HMAC over the raw body and compare in constant time before you grant access — with a runnable red/green test for Next.js, Lemon Squeezy, and Stripe.", "image": "https://shiptested.github.io/og-image.png", "datePublished": "2026-07-18", "dateModified": "2026-07-18", "author": {"@type": "Organization", "name": "ShipTested", "url": "https://shiptested.github.io"}, "publisher": {"@type": "Organization", "name": "ShipTested", "logo": {"@type": "ImageObject", "url": "https://shiptested.github.io/og-image.png"}}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://shiptested.github.io/articles/verify-webhook-signature/"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "The NEXT_PUBLIC_ Prefix Can Ship Your Secret Keys to the Browser", "description": "The Supabase anon key belongs in the browser; the service-role key never does. One NEXT_PUBLIC_ prefix or one Client Component can inline a secret into the bundle every visitor downloads. Find out which secrets your build exposes — with a runnable check.", "image": "https://shiptested.github.io/og-image.png", "datePublished": "2026-07-18", "dateModified": "2026-07-18", "author": {"@type": "Organization", "name": "ShipTested", "url": "https://shiptested.github.io"}, "publisher": {"@type": "Organization", "name": "ShipTested", "logo": {"@type": "ImageObject", "url": "https://shiptested.github.io/og-image.png"}}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://shiptested.github.io/articles/secrets-in-the-client-bundle/"}}</script>
 <header class="nav"><div class="wrap nav-in">
   <a class="brand" href="https://shiptested.github.io" aria-label="ShipTested home"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.5 12.5l3.5 3.5 7-8" fill="none" stroke="#2FBF71" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">shiptested</span></a>
   <a class="home" href="https://shiptested.github.io">&#8592; Home</a>
@@ -71,42 +71,43 @@
 
 <div class="hero"><div class="wrap hero-in">
   <span class="eyebrow">Launch-readiness teardown</span>
-  <h1>Verify the Webhook Before You Trust a Cent of It</h1>
+  <h1>One Wrong Prefix Ships Your Service-Role Key to Every Visitor</h1>
 </div></div>
 
 <article><div class="wrap">
-<p>Your prototype works. That is not the same as safe to sell.</p>
-<p>A webhook endpoint is a public URL. Anyone on the internet can POST to it. If your handler reads the JSON body and grants access, credits, or a subscription based on what it says, then anyone who guesses the URL can hand themselves a paid account by sending a fake "payment succeeded" event.</p>
-<p>The launch check is blunt:</p>
-<blockquote>A request with a missing or wrong signature must be rejected before it changes any state.</blockquote>
-<h2>A signature is not a password in the body</h2>
-<p>The fix is not a secret field inside the JSON. Payment providers sign the request: they compute a keyed hash (HMAC) of the exact bytes they sent, using a secret only you and they know, and put the result in a header. Your job is to recompute that hash over the raw body you received and compare.</p>
-<p>Two details decide whether this actually works, and both are easy to get wrong.</p>
-<h3>Verify the raw body, not the parsed object</h3>
-<p>The signature is over the exact bytes the provider sent. If your framework parses the JSON first and you re-serialize it to check the signature, a single reordered key or whitespace difference makes the recomputed hash wrong — so you either reject valid events or, worse, "fix" it by trusting the parsed object instead. In the ShipTested example the handler verifies the unmodified raw string first, and only then parses it:</p>
-<pre class="code"><code>const expected = hmacSha256Hex(rawBody, secret);
-if (!timingSafeEqual(expected, receivedSignature)) {
-  return { status: 401 };            // reject before any parse or state change
-}
-const event = JSON.parse(rawBody);   // only trusted after the signature holds</code></pre>
-<p>In Next.js this means reading the raw request body in the route handler (not <code>req.json()</code> on a framework that has already consumed and reserialized it). Lemon Squeezy sends the digest in the <code>X-Signature</code> header as an HMAC-SHA256 hex string; Stripe sends it in <code>Stripe-Signature</code> and signs with your endpoint secret. The provider differs; the invariant does not.</p>
-<h3>Compare in constant time</h3>
-<p><code>a === b</code> on two strings can return early on the first differing character. In principle that timing difference leaks how much of the signature you guessed right, one character at a time. Use a constant-time comparison (<code>crypto.timingSafeEqual</code> in Node) so every comparison takes the same time regardless of where the mismatch is. It costs nothing and closes the door.</p>
-<h2>Reproduce it with a test</h2>
-<p>The public example proves the negative case directly. Its launch suite includes:</p>
-<pre class="code"><code>✓ invalid signature is rejected before state changes</code></pre>
-<p>The test sends a well-formed order payload with a bogus signature and asserts two things: the handler returns a rejection, and the entitlement store is still empty. A handler that parses first and checks later would fail the second assertion — the damage is already done by the time it looks at the signature.</p>
-<p>Run it against a clean clone:</p>
-<pre class="code"><code>npm test</code></pre>
-<p>Then send yourself a hostile request in staging: take a real test-mode event body, change one byte, keep the old signature, and POST it. A correct handler rejects it and writes nothing.</p>
-<h2>A valid signature is still not enough</h2>
-<p>Verifying the signature proves the message is authentic — that it came from the provider and was not modified. It does not prove the message is one you should act on. After the signature holds, a safe handler still checks the event type, the paid status, the store and product or variant, the test versus live mode, and that the order maps to a real internal user — and it makes repeated deliveries grant access only once. Signature verification is the first gate, not the whole wall. (Idempotency is its own launch check; a single event can be replayed many times and each replay carries a perfectly valid signature.)</p>
-<h2>What this proves — and does not</h2>
-<p>The example is a dependency-free teaching harness. It proves that a specific handler rejects an unsigned or altered body before mutating state, and that raw-body verification plus a constant-time compare is the shape of the fix. It is not a drop-in for your framework, it does not configure your provider's secret rotation, and it is not a security audit. Wire the raw-body reader your framework actually needs, keep the secret in server-only configuration, and rotate it if it ever leaks.</p>
-<p>Your prototype accepting a webhook is the start. Rejecting a forged one, before it touches your database, is evidence you can stand behind when you sell.</p>
-<p><strong><a href="https://github.com/shiptested/public-example?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=webhook_signature&amp;utm_term=example" rel="noopener">Inspect the signed-webhook example</a></strong></p>
-<p><strong><a href="https://shiptested.github.io/?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=webhook_signature&amp;utm_term=checklist" rel="noopener">Run the broader launch-readiness checklist</a></strong></p>
-<p>Sources: <a href="https://docs.lemonsqueezy.com/help/webhooks/signing-requests" rel="noopener">Lemon Squeezy signing requests</a> and <a href="https://docs.stripe.com/webhooks/signature" rel="noopener">Stripe webhook signatures</a>.</p>
+<p>Not every key in your Supabase project is a secret. That is the detail an AI-built app gets wrong in the most expensive direction.</p>
+<p>The anon (publishable) key is designed to sit in the browser. It identifies your project, and Row Level Security is what stands between it and your data. Shipping it to the client is normal and expected.</p>
+<p>The service-role key is the opposite. It bypasses Row Level Security entirely and acts as the owner of your data. It is a server-only secret. The moment it lands in a browser bundle, anyone who opens your site can read every row, forge an entitlement, and grant themselves the thing you sell.</p>
+<p>So "a Supabase key is in my JavaScript" is not the question. The question is <strong>which</strong> key—and in a vibe-coded Next.js app, the dangerous one gets there through a mechanism that looks harmless.</p>
+<h2>How a secret crosses into the browser</h2>
+<p>Next.js has one rule for what reaches the client: an environment variable is exposed to the browser if, and only if, its name starts with <code>NEXT_PUBLIC_</code>. That prefix is a publishing decision, not a naming convention.</p>
+<p>The leak arrives in a few ordinary ways:</p>
+<ul><li>A generator or a hurried fix names the server key <code>NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY</code>, because the anon key next to it also had the prefix and copying it "worked."</li><li>A secret is read inside a Client Component—a file that runs in the browser—so its value is inlined into the bundle at build time.</li><li>A key is hardcoded as a string literal in shared code that ships to the client.</li></ul>
+<p>In every case the build does exactly what you told it to. It writes the secret into a static JavaScript file and serves that file to every visitor. There is no error. The app works. The key is public.</p>
+<p>The useful launch question is concrete:</p>
+<blockquote>If I open my site in a private window and read the JavaScript it serves, is any server-only secret in there?</blockquote>
+<h2>Separate "publishable" from "secret" on purpose</h2>
+<p>Sort every value your app uses into two lists, and let the prefix follow the list—not the other way around.</p>
+<p>Publishable, safe in the browser: the Supabase anon key, your public site URL, analytics IDs, publishable payment keys (for example a Stripe <code>pk_</code> key). These may carry <code>NEXT_PUBLIC_</code>.</p>
+<p>Server-only secrets, never in the browser: the Supabase service-role key, webhook signing secrets, database URLs, and any private API key (for example a Stripe <code>sk_</code> key or a Lemon Squeezy API key). These must never carry <code>NEXT_PUBLIC_</code>, and must only be read in server code—Route Handlers, Server Actions, or server-side data functions.</p>
+<p>The test is not "does the name look scary." It is: if this value were printed on your home page, would you have to rotate it? If yes, it is server-only.</p>
+<h2>Run the exposure check against your own build</h2>
+<p>A grep of your source is a start. A grep of your *build output* is the proof, because the build is what the browser actually receives.</p>
+<p>First, build the client the way production does, then search the shipped bundle for the secrets themselves—not their names:</p>
+<ol><li>Run your production build so the client assets are generated.</li><li>Search the generated client output for the literal value of each server-only secret: the service-role key, webhook secrets, private API keys.</li><li>The passing result is zero matches. Any match means that secret shipped.</li></ol>
+<p>Then close the door that let it happen:</p>
+<ol><li>List every <code>NEXT_PUBLIC_</code> variable. Confirm each one is genuinely publishable by the test above.</li><li>Confirm each server-only secret is read only in server code, never in a Client Component.</li></ol>
+<p>One rule has no exception. If a service-role key or other secret was ever built into a client bundle—even in a preview deploy, even for a minute—treat it as compromised and rotate it. A key that reached the browser cannot be un-shipped; it may sit in a CDN cache, a fork, or someone's open tab. Removing the prefix fixes the next build, not the leak that already happened.</p>
+<p>Keep the build-output search in your launch suite. Run it whenever you add an environment variable or move code between server and client.</p>
+<h2>Know what green does—and does not—mean</h2>
+<p>Zero secrets in one build is evidence for that build, on that day. It is not a guarantee that the next commit keeps the line.</p>
+<p>It does not audit third-party scripts, and it does not prove the anon key is safe on its own—the anon key is only as safe as the <a href="https://github.com/shiptested/public-example" rel="noopener">Row Level Security</a> behind it. A publishable key in the browser is fine precisely because a policy, not secrecy, protects the data. Ship the anon key; test the policy.</p>
+<p>The goal is not to call the app "secure." The goal is to preserve a falsifiable statement:</p>
+<blockquote>The client bundle my site serves contains no value I would have to rotate if a stranger read it.</blockquote>
+<p>Your prototype working is the start. A build that ships your publishable keys and none of your secrets is evidence you can sell behind.</p>
+<p><strong><a href="https://github.com/shiptested/public-example?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=client_secret_exposure&amp;utm_term=example" rel="noopener">Browse the runnable examples</a></strong></p>
+<p><strong><a href="https://shiptested.github.io/?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=client_secret_exposure&amp;utm_term=checklist" rel="noopener">Run the broader launch-readiness checklist</a></strong></p>
+<p>Sources: <a href="https://nextjs.org/docs/app/building-your-application/configuring/environment-variables" rel="noopener">Next.js environment variables</a> and <a href="https://supabase.com/docs/guides/api/api-keys" rel="noopener">Supabase API keys</a>.</p>
   <div class="cta">
     <p>Test this on your own app before you sell it.</p>
     <div class="cta-row">
@@ -114,7 +115,7 @@ const event = JSON.parse(rawBody);   // only trusted after the signature holds</
       <a class="btn ghost" href="https://shiptested.github.io/checklist/">The full launch checklist</a>
     </div>
   </div>
-  <nav class="related" aria-label="Related teardowns"><h2>More teardowns</h2><ul><li><a href="/articles/supabase-rls-two-user-test/">Test Supabase RLS with two users &#8594;</a></li><li><a href="/articles/success-url-not-proof-of-payment/">A success URL is not proof of payment &#8594;</a></li><li><a href="/articles/webhook-idempotency/">One webhook, five deliveries, one entitlement &#8594;</a></li><li><a href="/articles/service-role-key-bypasses-rls/">The service-role key turns off your RLS &#8594;</a></li><li><a href="/articles/secrets-in-the-client-bundle/">Which secrets does your build ship to the browser? &#8594;</a></li><li><a href="/articles/">See all teardowns &#8594;</a></li></ul></nav>
+  <nav class="related" aria-label="Related teardowns"><h2>More teardowns</h2><ul><li><a href="/articles/supabase-rls-two-user-test/">Test Supabase RLS with two users &#8594;</a></li><li><a href="/articles/success-url-not-proof-of-payment/">A success URL is not proof of payment &#8594;</a></li><li><a href="/articles/webhook-idempotency/">One webhook, five deliveries, one entitlement &#8594;</a></li><li><a href="/articles/verify-webhook-signature/">Verify a webhook signature before you trust it &#8594;</a></li><li><a href="/articles/service-role-key-bypasses-rls/">The service-role key turns off your RLS &#8594;</a></li><li><a href="/articles/">See all teardowns &#8594;</a></li></ul></nav>
 </div></article>
 
 <footer><div class="wrap foot-in">
