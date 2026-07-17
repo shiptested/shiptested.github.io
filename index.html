@@ -271,6 +271,37 @@
   .plain-list.yes li::before { content: '✓'; color: var(--pass); }
   .plain-list.no li::before { content: '×'; color: var(--fail); }
 
+  /* faq */
+  .faq-list { margin-top: 40px; border-top: 1px solid var(--line); }
+  .faq {
+    border-bottom: 1px solid var(--line);
+  }
+  .faq > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 20px 2px;
+    font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 1.05rem;
+    color: var(--ink);
+  }
+  .faq > summary::-webkit-details-marker { display: none; }
+  .faq > summary::after {
+    content: '+'; flex: none;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 1.3rem;
+    color: var(--accent-deep); line-height: 1;
+    transition: transform 150ms ease;
+  }
+  .faq[open] > summary::after { content: '\2212'; } /* minus */
+  .faq > summary:hover { color: var(--accent-deep); }
+  .faq-answer { padding: 0 2px 22px; max-width: 46rem; }
+  .faq-answer p { color: var(--ink-soft); font-size: 0.98rem; }
+  .faq-answer p + p { margin-top: 12px; }
+  .faq-answer a { font-weight: 600; }
+  .faq-answer code {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.85em;
+    background: var(--dot-grid); padding: 1px 5px; border-radius: 4px;
+  }
+  @media (prefers-reduced-motion: reduce) { .faq > summary::after { transition: none; } }
+
   /* bottom capture band */
   .band { border-top: 1px solid var(--line); }
   .band-in { padding-block: 76px; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; }
@@ -462,6 +493,94 @@
             <li>You want promises of guaranteed revenue — we don&#8217;t make those</li>
           </ul>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ faq ============ -->
+  <!-- Tier-0 inquiry deflection + future auto-responder knowledge base.
+       Every answer must stay true to the current pre-sale reality:
+       free checklist + public example live; course still in production;
+       nothing is for sale yet, so make no refund/price promises here. -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Questions</span>
+        <h2>Before you sign up</h2>
+        <p>Short, honest answers. If something here is unclear, that&#8217;s a bug&#8212;tell us.</p>
+      </div>
+      <div class="faq-list">
+        <details class="faq">
+          <summary>What do I actually get right now?</summary>
+          <div class="faq-answer">
+            <p>
+              Two things, both free: the Launch Readiness Checklist (a pass/fail list
+              for the money path of a Next.js&nbsp;+&nbsp;Supabase app), and the public
+              example on GitHub you can clone and run today. The full course is still
+              in production&#8212;joining the list gets you first access when it ships.
+            </p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>Is the course available yet?</summary>
+          <div class="faq-answer">
+            <p>
+              Not yet. v1 is being built now, covering the money path: Supabase RLS,
+              server-created checkout, and signed, idempotent webhooks. We&#8217;re
+              publishing the free proof first and building the paid course around the
+              questions real builders ask. The list hears about it before anyone else.
+            </p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>Is this made by a human or by AI?</summary>
+          <div class="faq-answer">
+            <p>
+              AI does most of the writing and code. That&#8217;s why every technical
+              claim ships with a test you can run yourself&#8212;we don&#8217;t ask you
+              to trust an author, we ask you to run <code>npm test</code> on a clean
+              clone. Where AI helped is disclosed, and we don&#8217;t invent
+              testimonials or credentials.
+            </p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>Who is this for&#8212;and not for?</summary>
+          <div class="faq-answer">
+            <p>
+              For builders who already have a working Next.js&nbsp;+&nbsp;Supabase
+              prototype (built with v0, Claude Code, Replit, or your own prompts) and
+              are comfortable with basic JavaScript, Git, and environment variables.
+            </p>
+            <p>
+              Not for complete beginners, and not a formal security certification or
+              enterprise audit. It hardens one specific thing: the path from signup to
+              paid access.
+            </p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>How do I run the public example?</summary>
+          <div class="faq-answer">
+            <p>
+              Clone it, then <code>cd public-example</code> and run <code>npm test</code>.
+              No dependencies to install&#8212;it runs on Node&nbsp;20+. You&#8217;ll see
+              the vulnerable version fail and the fixed version pass.
+              <a href="https://github.com/shiptested/public-example" rel="noopener">See it on GitHub &#8594;</a>
+            </p>
+          </div>
+        </details>
+        <details class="faq">
+          <summary>How many emails will you send?</summary>
+          <div class="faq-answer">
+            <p>
+              The checklist, then a short series of four launch-readiness emails, plus
+              the occasional update when the course ships. That&#8217;s the whole plan,
+              and every email has a one-click unsubscribe. No daily blasts, no selling
+              your address.
+            </p>
+          </div>
+        </details>
       </div>
     </div>
   </section>
