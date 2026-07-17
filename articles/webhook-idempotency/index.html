@@ -46,6 +46,11 @@
   .cta { margin:34px 0 8px; padding:22px; background:var(--bg-raise); border:1px solid var(--line); border-radius:12px; }
   .cta p { margin:0 0 14px; font-weight:600; }
   .cta-row { display:flex; gap:12px; flex-wrap:wrap; }
+  .related { margin:38px 0 0; padding-top:24px; border-top:1px solid var(--line); }
+  .related h2 { font-family:'Archivo',sans-serif; font-weight:800; font-size:1.15rem; margin:0 0 12px; }
+  .related ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .related li a { color:var(--accent-deep); font-weight:600; text-decoration:none; }
+  .related li a:hover { text-decoration:underline; }
   .btn { display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:0.96rem; padding:10px 18px; border-radius:6px; text-decoration:none; }
   .btn.primary { background:var(--accent); color:var(--accent-ink); } .btn.ghost { background:none; border:1px solid var(--line); color:var(--ink); }
   footer { border-top:1px solid var(--line); margin-top:20px; }
@@ -110,9 +115,7 @@ npm run test:launch</code></pre>
 <p>The public example stores processed events in an in-memory <code>Set</code> and entitlements in an in-memory <code>Map</code>. A process restart clears both.</p>
 <p>Its five deliveries run in a normal loop. They do not arrive concurrently. The example therefore does not prove that two workers cannot pass a database existence check at the same time.</p>
 <p>It also does not prove:</p>
-<ul><li>that the custom user ID exists in your database;</li><li>atomic rollback after a failure between event recording and entitlement</li></ul>
-<p>  mutation;</p>
-<ul><li>behavior across multiple server instances;</li><li>refund or revocation ordering;</li><li>protection against a late purchase event restoring revoked access.</li></ul>
+<ul><li>that the custom user ID exists in your database;</li><li>atomic rollback after a failure between event recording and entitlement mutation;</li><li>behavior across multiple server instances;</li><li>refund or revocation ordering;</li><li>protection against a late purchase event restoring revoked access.</li></ul>
 <p>Those are launch checks for the real database-backed application, not claims made by this harness.</p>
 <p>In production, the “already processed?” check and the entitlement change need a database-enforced boundary. Use a transaction and appropriate unique constraints so two overlapping deliveries cannot both win. Resolve the buyer against a real internal record. Then test forced failures, concurrent delivery, process restarts, and refund ordering against the deployed database revision.</p>
 <p>Do not label the in-memory demonstration production-safe. Do not treat one green sequential replay as a security certification.</p>
@@ -130,6 +133,7 @@ npm run test:launch</code></pre>
       <a class="btn ghost" href="https://shiptested.github.io/checklist/">The full launch checklist</a>
     </div>
   </div>
+  <nav class="related" aria-label="Related teardowns"><h2>More teardowns</h2><ul><li><a href="/articles/supabase-rls-two-user-test/">Test Supabase RLS with two users &#8594;</a></li><li><a href="/articles/success-url-not-proof-of-payment/">A success URL is not proof of payment &#8594;</a></li><li><a href="/articles/verify-webhook-signature/">Verify a webhook signature before you trust it &#8594;</a></li></ul></nav>
 </div></article>
 
 <footer><div class="wrap foot-in">
