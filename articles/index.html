@@ -64,6 +64,14 @@
 </style>
 <style>
   .lede { color:var(--ink-soft); font-size:1.12rem; margin:16px 0 0; max-width:56ch; }
+.guide{padding-block:26px 6px;border-top:1px solid var(--line);margin-top:26px;}
+.guide h2{font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:-.01em;font-size:1.4rem;margin:0;text-wrap:balance;}
+.guide p{color:var(--ink-soft);line-height:1.7;margin:14px 0 0;}
+.guide ul{margin:14px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;}
+.guide li{color:var(--ink-soft);line-height:1.6;padding-left:15px;position:relative;}
+.guide li::before{content:"\2014";position:absolute;left:0;color:var(--accent-deep);}
+.guide strong{color:var(--ink);font-weight:600;}
+.guide a{color:var(--accent-deep);text-decoration:none;} .guide a:hover{text-decoration:underline;}
   .teardowns { padding-block:34px 8px; display:flex; flex-direction:column; gap:16px; }
   a.teardown { display:block; text-decoration:none; color:var(--ink); background:var(--bg-raise);
     border:1px solid var(--line); border-radius:12px; padding:22px 24px; transition:border-color .15s, transform .15s; }
@@ -134,6 +142,18 @@
     <p>You wired the webhook to grant access on payment. Does anything revoke it when the order is refunded or the subscription expires? The money path's return leg — the half AI-built apps forget, so a refunded customer keeps the product.</p>
     <span class="more">Read the teardown &#8594;</span>
   </a>
+  </div>
+  <div class="guide">
+    <h2>The money path, and how to use these teardowns</h2>
+    <p>“The money path” is the narrow set of code between a stranger arriving and your app granting them paid access: which rows the database will hand out, which secrets your build ships to the browser, what your checkout treats as proof of payment, and what your webhook does with the events that follow. It is a small surface, but it is the one where a bug doesn't crash — it quietly leaks data, gives the product away, or bills the wrong person. AI coding tools are fluent on the happy path and skip these edges, which is why a vibe-coded app can pass every demo and still fail its first real customer.</p>
+    <p>The nine teardowns above fall into four groups. Run the test in each against your own app before you charge:</p>
+    <ul>
+      <li><strong>Data isolation</strong> — can one user read or change another's rows? <a href="/articles/supabase-rls-two-user-test/">the two-user RLS test</a>, <a href="/articles/service-role-key-bypasses-rls/">the service-role key that skips RLS</a>, and <a href="/articles/supabase-storage-bucket-exposure/">storage buckets your table policies don't cover</a>.</li>
+      <li><strong>Secrets</strong> — what does your build ship to the browser? <a href="/articles/secrets-in-the-client-bundle/">the one prefix that leaks your service-role key</a>.</li>
+      <li><strong>Checkout &amp; entitlements</strong> — does access come from a verified payment, for the right person, and does it end when the money does? <a href="/articles/success-url-not-proof-of-payment/">a success URL is not a receipt</a>, <a href="/articles/authenticated-not-authorized/">logged-in is not authorized</a>, and <a href="/articles/revoke-access-on-refund/">turning access off on a refund</a>.</li>
+      <li><strong>Webhooks</strong> — can a forged or replayed event grant access? <a href="/articles/verify-webhook-signature/">verify the signature over the raw body</a> and <a href="/articles/webhook-idempotency/">make repeated deliveries grant exactly once</a>.</li>
+    </ul>
+    <p>Each teardown is a teaching model with an honest boundary — it shows the shape of the failure and the fix, not a certification; you run the test and keep the evidence. The <a href="https://shiptested.github.io/checklist/">free 20-point launch checklist</a> is the fast pass across all four groups, and <a href="https://shiptested.github.io/">the ShipTested course</a> walks the whole path lesson by lesson with a test you run against your own app and a go/no-go workbook.</p>
   </div>
   <div class="cta">
     <p>Test all of these on your own app before you sell it.</p>
