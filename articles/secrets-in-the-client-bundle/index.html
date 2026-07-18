@@ -92,7 +92,7 @@
 <p>Server-only secrets, never in the browser: the Supabase service-role key, webhook signing secrets, database URLs, and any private API key (for example a Stripe <code>sk_</code> key or a Lemon Squeezy API key). These must never carry <code>NEXT_PUBLIC_</code>, and must only be read in server code—Route Handlers, Server Actions, or server-side data functions.</p>
 <p>The test is not "does the name look scary." It is: if this value were printed on your home page, would you have to rotate it? If yes, it is server-only.</p>
 <h2>Run the exposure check against your own build</h2>
-<p>A grep of your source is a start. A grep of your *build output* is the proof, because the build is what the browser actually receives.</p>
+<p>A grep of your source is a start. A grep of your <em>build output</em> is the proof, because the build is what the browser actually receives.</p>
 <p>First, build the client the way production does, then search the shipped bundle for the secrets themselves—not their names:</p>
 <ol><li>Run your production build so the client assets are generated.</li><li>Search the generated client output for the literal value of each server-only secret: the service-role key, webhook secrets, private API keys.</li><li>The passing result is zero matches. Any match means that secret shipped.</li></ol>
 <p>Then close the door that let it happen:</p>
