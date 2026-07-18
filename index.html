@@ -179,6 +179,16 @@ footer{border-top:1px solid var(--line);} .foot-in{padding-block:30px;font-size:
     <h2>Eight lessons. Every money-path failure comes with a test you run.</h2>
     <p>Not a course you read — one you run. Clone the repo, watch red turn green, then run the
     same check against your own app and keep the evidence.</p>
+    <pre style="background:#0d1219;color:#c8d3de;border-radius:10px;padding:15px 18px;overflow-x:auto;font-size:.8rem;line-height:1.7;margin:6px 0 2px;text-align:left;"><span style="color:#8aa0b3">$ git clone … &amp;&amp; npm test</span>
+
+<span style="color:#2FBF71">&#10004;</span> RLS policy model: user B receives zero rows owned by user A
+<span style="color:#2FBF71">&#10004;</span> success-page visit creates no entitlement
+<span style="color:#2FBF71">&#10004;</span> invalid signature is rejected before state changes
+<span style="color:#2FBF71">&#10004;</span> same signed order webhook five times grants exactly once
+<span style="color:#2FBF71">&#10004;</span> signed event for an unexpected variant grants nothing
+
+<span style="color:#8aa0b3">tests 5 · pass 5 · fail 0 — red turned green in under a second</span></pre>
+    <p style="font-size:.85rem;color:var(--ink-soft);margin-top:4px;">That's the reference repo, live. No dependencies, Node 20+. <a href="https://github.com/shiptested/public-example" rel="noopener">Run it yourself &#8594;</a></p>
   </div>
   <div class="lessons"><div class="row"><span class="n">0</span><span>The money path &amp; how to use this</span><span class="mod">Start</span></div>
 <div class="row"><span class="n">1</span><span>Test Supabase RLS with two users</span><span class="mod">Data isolation</span></div>
