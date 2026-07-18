@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Launch-Readiness Teardowns for Vibe-Coded SaaS — ShipTested</title>
-<meta name="description" content="Teardowns of the money path in AI-built Next.js + Supabase apps: RLS data isolation, the service-role bypass, leaked client secrets, checkout proof, and webhook signatures and idempotency.">
+<meta name="description" content="Teardowns of the money path in AI-built Next.js + Supabase apps: RLS data isolation, the service-role bypass, leaked client secrets, storage exposure, checkout proof, and webhook signatures and idempotency.">
 <meta property="og:title" content="Launch-Readiness Teardowns for Vibe-Coded SaaS">
-<meta property="og:description" content="Teardowns of the money path in AI-built Next.js + Supabase apps: RLS data isolation, the service-role bypass, leaked client secrets, checkout proof, and webhook signatures and idempotency.">
+<meta property="og:description" content="Teardowns of the money path in AI-built Next.js + Supabase apps: RLS data isolation, the service-role bypass, leaked client secrets, storage exposure, checkout proof, and webhook signatures and idempotency.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://shiptested.github.io/og-image.png">
 <meta property="og:url" content="https://shiptested.github.io/articles/">
@@ -73,7 +73,7 @@
   a.teardown p { color:var(--ink-soft); margin:0 0 12px; font-size:1.0rem; line-height:1.6; }
   a.teardown .more { font-family:'IBM Plex Mono',monospace; font-size:0.84rem; font-weight:600; color:var(--accent-deep); }
 </style>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "CollectionPage", "name": "Launch-Readiness Teardowns for Vibe-Coded SaaS", "description": "Teardowns of the money path in AI-built Next.js + Supabase apps: RLS data isolation, the service-role bypass, leaked client secrets, checkout proof, and webhook signatures and idempotency.", "url": "https://shiptested.github.io/articles/", "isPartOf": {"@type": "WebSite", "name": "ShipTested", "url": "https://shiptested.github.io"}, "hasPart": [{"@type": "Article", "headline": "Test Supabase RLS With Two Users", "url": "https://shiptested.github.io/articles/supabase-rls-two-user-test/"}, {"@type": "Article", "headline": "The Service-Role Key Bypasses Every RLS Policy You Wrote", "url": "https://shiptested.github.io/articles/service-role-key-bypasses-rls/"}, {"@type": "Article", "headline": "The NEXT_PUBLIC_ Prefix Can Ship Your Secret Keys to the Browser", "url": "https://shiptested.github.io/articles/secrets-in-the-client-bundle/"}, {"@type": "Article", "headline": "A Success URL Is Not Proof of Payment", "url": "https://shiptested.github.io/articles/success-url-not-proof-of-payment/"}, {"@type": "Article", "headline": "Verify a Webhook Signature Before You Trust It", "url": "https://shiptested.github.io/articles/verify-webhook-signature/"}, {"@type": "Article", "headline": "One Webhook, Five Deliveries, One Entitlement", "url": "https://shiptested.github.io/articles/webhook-idempotency/"}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "CollectionPage", "name": "Launch-Readiness Teardowns for Vibe-Coded SaaS", "description": "Teardowns of the money path in AI-built Next.js + Supabase apps: RLS data isolation, the service-role bypass, leaked client secrets, storage exposure, checkout proof, and webhook signatures and idempotency.", "url": "https://shiptested.github.io/articles/", "isPartOf": {"@type": "WebSite", "name": "ShipTested", "url": "https://shiptested.github.io"}, "hasPart": [{"@type": "Article", "headline": "Test Supabase RLS With Two Users", "url": "https://shiptested.github.io/articles/supabase-rls-two-user-test/"}, {"@type": "Article", "headline": "The Service-Role Key Bypasses Every RLS Policy You Wrote", "url": "https://shiptested.github.io/articles/service-role-key-bypasses-rls/"}, {"@type": "Article", "headline": "The NEXT_PUBLIC_ Prefix Can Ship Your Secret Keys to the Browser", "url": "https://shiptested.github.io/articles/secrets-in-the-client-bundle/"}, {"@type": "Article", "headline": "Your Table RLS Doesn't Protect Your Files", "url": "https://shiptested.github.io/articles/supabase-storage-bucket-exposure/"}, {"@type": "Article", "headline": "A Success URL Is Not Proof of Payment", "url": "https://shiptested.github.io/articles/success-url-not-proof-of-payment/"}, {"@type": "Article", "headline": "Verify a Webhook Signature Before You Trust It", "url": "https://shiptested.github.io/articles/verify-webhook-signature/"}, {"@type": "Article", "headline": "One Webhook, Five Deliveries, One Entitlement", "url": "https://shiptested.github.io/articles/webhook-idempotency/"}]}</script>
 </head>
 <body>
 <header class="nav"><div class="wrap nav-in">
@@ -102,6 +102,11 @@
   <a class="teardown" href="/articles/secrets-in-the-client-bundle/">
     <h2>The NEXT_PUBLIC_ Prefix Can Ship Your Secret Keys to the Browser</h2>
     <p>The Supabase anon key belongs in the browser; the service-role key never does. One prefix or one Client Component can inline a secret into the bundle every visitor downloads.</p>
+    <span class="more">Read the teardown &#8594;</span>
+  </a>
+  <a class="teardown" href="/articles/supabase-storage-bucket-exposure/">
+    <h2>Your Table RLS Doesn't Protect Your Files</h2>
+    <p>Supabase Storage is a separate system from your tables. A public bucket or a too-broad storage policy serves private uploads to anyone — the RLS you wrote for your rows doesn't touch your files.</p>
     <span class="more">Read the teardown &#8594;</span>
   </a>
   <a class="teardown" href="/articles/success-url-not-proof-of-payment/">

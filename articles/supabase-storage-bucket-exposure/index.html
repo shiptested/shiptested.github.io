@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Service-Role Key Bypasses Every RLS Policy You Wrote — ShipTested</title>
-<meta name="description" content="You enabled Row Level Security and tested it — then a Next.js server route used the service-role key, which skips RLS entirely, and handed user B user A's row. Find and fix the bypass with a runnable two-account test.">
-<meta property="og:title" content="The Service-Role Key Bypasses Every RLS Policy You Wrote">
-<meta property="og:description" content="You enabled Row Level Security and tested it — then a Next.js server route used the service-role key, which skips RLS entirely, and handed user B user A's row. Find and fix the bypass with a runnable two-account test.">
+<title>Your Table RLS Doesn't Protect Your Files — ShipTested</title>
+<meta name="description" content="You tested Supabase RLS on your tables — but Storage is a separate system your table policies don't touch. A public bucket or a too-broad storage policy serves private uploads to anyone. Test file access with a signed-out and a non-owner request.">
+<meta property="og:title" content="Your Table RLS Doesn't Protect Your Files">
+<meta property="og:description" content="You tested Supabase RLS on your tables — but Storage is a separate system your table policies don't touch. A public bucket or a too-broad storage policy serves private uploads to anyone. Test file access with a signed-out and a non-owner request.">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://shiptested.github.io/og-image.png">
-<meta property="og:url" content="https://shiptested.github.io/articles/service-role-key-bypasses-rls/">
+<meta property="og:url" content="https://shiptested.github.io/articles/supabase-storage-bucket-exposure/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://shiptested.github.io/og-image.png">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -63,7 +63,7 @@
 </style>
 </head>
 <body>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "The Service-Role Key Bypasses Every RLS Policy You Wrote", "description": "You enabled Row Level Security and tested it — then a Next.js server route used the service-role key, which skips RLS entirely, and handed user B user A's row. Find and fix the bypass with a runnable two-account test.", "image": "https://shiptested.github.io/og-image.png", "datePublished": "2026-07-18", "dateModified": "2026-07-18", "author": {"@type": "Organization", "name": "ShipTested", "url": "https://shiptested.github.io"}, "publisher": {"@type": "Organization", "name": "ShipTested", "logo": {"@type": "ImageObject", "url": "https://shiptested.github.io/og-image.png"}}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://shiptested.github.io/articles/service-role-key-bypasses-rls/"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Your Table RLS Doesn't Protect Your Files", "description": "You tested Supabase RLS on your tables — but Storage is a separate system your table policies don't touch. A public bucket or a too-broad storage policy serves private uploads to anyone. Test file access with a signed-out and a non-owner request.", "image": "https://shiptested.github.io/og-image.png", "datePublished": "2026-07-18", "dateModified": "2026-07-18", "author": {"@type": "Organization", "name": "ShipTested", "url": "https://shiptested.github.io"}, "publisher": {"@type": "Organization", "name": "ShipTested", "logo": {"@type": "ImageObject", "url": "https://shiptested.github.io/og-image.png"}}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://shiptested.github.io/articles/supabase-storage-bucket-exposure/"}}</script>
 <header class="nav"><div class="wrap nav-in">
   <a class="brand" href="https://shiptested.github.io" aria-label="ShipTested home"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.5 12.5l3.5 3.5 7-8" fill="none" stroke="#2FBF71" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="brand-name">shiptested</span></a>
   <a class="home" href="https://shiptested.github.io">&#8592; Home</a>
@@ -71,71 +71,42 @@
 
 <div class="hero"><div class="wrap hero-in">
   <span class="eyebrow">Launch-readiness teardown</span>
-  <h1>The Service-Role Key Turns Off Every RLS Policy You Wrote</h1>
+  <h1>Your Table RLS Doesn't Protect Your Files</h1>
 </div></div>
 
 <article><div class="wrap">
-<p>You enabled Row Level Security. You ran the two-user test. User B could not read User A's row through the ordinary client. That work is real—and a single line in a server route can quietly undo all of it.</p>
-<p>Supabase gives your project two kinds of keys. The anon (publishable) key makes requests that Row Level Security evaluates. The service-role (secret) key is a trusted server credential that <strong>bypasses RLS entirely</strong>. A query made with the service-role key does not run your policies. It runs as the owner of the data.</p>
-<p>That is exactly what the key is for. It is also exactly how an AI-built app leaks across accounts while every RLS policy you wrote sits untouched in the database.</p>
-<h2>How the bypass gets into a vibe-coded app</h2>
-<p>Nobody decides to disable their access boundary. It arrives by accident, and usually one of two ways.</p>
-<p>The first is scaffolding. A code generator spins up a Next.js Route Handler or Server Action and reaches for <code>SUPABASE_SERVICE_ROLE_KEY</code>, because a server key "just works" and never trips an authorization error during a demo.</p>
-<p>The second is a fix that made a red error go green. A developer hits <code>permission denied for table</code> while wiring a feature, searches for the fastest way past it, and swaps the client over to the service-role key. The error disappears. So does RLS on that path.</p>
-<p>Either way, the shape is the same:</p>
-<pre class="code"><code>// app/api/documents/[id]/route.js
-import { createClient } from "@supabase/supabase-js";
-
-// This client ignores every RLS policy on the table.
-const admin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-export async function GET(request, { params }) {
-  const { data } = await admin
-    .from("documents")
-    .select("*")
-    .eq("id", params.id)
-    .single();
-  return Response.json(data);
-}</code></pre>
-<p>The route takes an ID from the request and returns the row. Because the query runs with the service-role key, it does not check who is asking. User B does not need to touch your interface. They call the same endpoint with User A's document ID and receive User A's document.</p>
+<p>You ran the two-user test. Your database rejects a direct request for another account's row. Then a user uploads an invoice, an ID photo, a private export — and it's served to anyone with the link.</p>
+<p>Supabase Storage is a <strong>separate system</strong> from your Postgres tables. The Row Level Security you wrote for <code>documents</code> does not apply to files. Storage has its own access model — bucket visibility plus policies on <code>storage.objects</code> — and the convenient setup quietly serves private uploads to the world.</p>
+<p>There are two ways an AI-built app gets here, and both look fine in the demo.</p>
+<p><strong>A public bucket used for private files.</strong> Buckets are private by default, but a public bucket is the fastest way to make <code>&lt;img src&gt;</code> "just work" without signed URLs — so the generator (or a stuck developer) flips it on. Now every object in that bucket is world-readable by URL. Fine for avatars. Not fine for the invoice you also uploaded there.</p>
+<p><strong>A private bucket with a policy that doesn't scope to the owner.</strong> A private bucket is protected by policies on <code>storage.objects</code>. A policy like "authenticated users can select" reads as safe and lets *any* signed-in user read *every* file. The policy has to tie the object to the user who owns it.</p>
 <p>The useful launch question is concrete:</p>
-<blockquote>Does this route return the row because the caller is allowed to see it, or only because the key it uses cannot say no?</blockquote>
-<h2>Separate "trusted" from "on behalf of a user"</h2>
-<p>The service-role key is not the problem. Using it on a path that returns user-supplied-ID data to the caller is the problem.</p>
-<p>A server route acting <strong>on behalf of a signed-in user</strong> should run as that user, so RLS still applies. In Next.js, that means a request-scoped client built from the user's session, not a module-level admin client:</p>
-<pre class="code"><code>// The client carries the user's identity; RLS is evaluated as User B.
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-
-const supabase = createServerClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  { cookies: cookies() }
+<blockquote>If I take the URL of a private file and open it signed out — or fetch it as a different user — do I get the file?</blockquote>
+<h2>The invariant, in Storage terms</h2>
+<p>A file in a private bucket must be reachable only by someone the policy allows. The owner check usually lives in the object's path: files are stored under a prefix like <code>user_id/filename</code>, and the policy compares that prefix to <code>auth.uid()</code>.</p>
+<pre class="code"><code>-- storage.objects policy: a user may read only files under their own folder
+create policy "own files only"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'private-docs'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );</code></pre>
-<p>The service-role key is for genuinely <strong>trusted</strong> server work that must bypass RLS by design: writing an entitlement from a verified webhook, an admin job, a migration task. Those paths carry their own rule—they must do their own authorization and must never take an untrusted ID from the request and hand back the row it names.</p>
-<p>The distinction is not "server versus client." Both clients above run on the server. The distinction is whose authority the query runs under.</p>
-<h2>Run the bypass test against your own app</h2>
-<p>A grep tells you where the key is. A request tells you what it does. Do both.</p>
-<p>First, find every place the service-role key is loaded:</p>
-<ol><li>Search your codebase for <code>SERVICE_ROLE</code>, <code>service_role</code>, and the client that receives it.</li><li>For each result, answer one question: can the caller influence which row this path returns or changes? If yes, it needs its own authorization check—or it should not be using the service-role key at all.</li></ol>
-<p>Then prove the boundary with two ordinary accounts, against the real endpoint:</p>
-<ol><li>Sign in as User A and create a private row. Save its exact ID.</li><li>Sign out, then sign in as User B through the ordinary app client.</li><li>Call the actual route that reads that resource—the same URL your app calls—as User B, requesting User A's saved ID.</li><li>Assert the response is a refusal or empty, never User A's row.</li><li>Repeat for every operation the route permits: read, update, and delete.</li><li>Sign back in as User A and confirm the intended own-row flow still works.</li></ol>
-<p>Do not test this by calling Supabase directly with the service-role key. That measures the key, not your route. Drive the request the way a real user's browser would—through the endpoint, with an ordinary user's session.</p>
-<p>If User B receives or changes User A's data, keep the exact request, response, identities, and minimal fixture. Turn that reproduction into a test before you change the route. A stable red case is evidence that your fix addresses the failure you actually found.</p>
-<h2>Know what green does—and does not—mean</h2>
-<p>A passing test on one route is evidence for one path. It is not a clean bill of health for the service-role key across your app.</p>
-<p>It does not prove that your other routes, Server Actions, RPCs, or cron jobs use the key safely. It does not prove that a route which is safe today stays safe after the next change. And a green result here does not replace the RLS work itself—<a href="https://github.com/shiptested/public-example" rel="noopener">the two-user RLS test</a> checks that your policies are correct; this checks that a server route did not route around them.</p>
-<p>Both matter, because they fail independently. Correct policies do nothing on a path that bypasses them. A user-scoped path does nothing if the underlying policy is wrong.</p>
-<p>Keep both tests in the launch suite. Run them when you add a route, change an authorization path, or touch how the app talks to Supabase.</p>
-<p>The goal is not to call the app "secure." The goal is to preserve a falsifiable statement:</p>
-<blockquote>Every route that returns or mutates a user's row runs under that user's authority, and User B cannot reach User A's data through any of them.</blockquote>
-<p>Your prototype working is the start. A route that cannot be tricked into answering for the wrong user is evidence you can sell behind.</p>
-<p><strong><a href="https://github.com/shiptested/public-example?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=service_role_bypass&amp;utm_term=example" rel="noopener">Inspect the RLS policy model</a></strong></p>
-<p><strong><a href="https://shiptested.github.io/?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=service_role_bypass&amp;utm_term=checklist" rel="noopener">Run the broader launch-readiness checklist</a></strong></p>
-<p>Sources: <a href="https://supabase.com/docs/guides/api/api-keys" rel="noopener">Supabase API keys and the service role</a> and <a href="https://supabase.com/docs/guides/database/postgres/row-level-security" rel="noopener">Row Level Security</a>.</p>
+<p>This is a SELECT policy shape only. It does not cover INSERT/UPDATE/DELETE, it does not make a *public* bucket private, and it does not prove your live project is configured this way. It shows the shape of the check the exposure test below must actually pass.</p>
+<h2>Run the storage-exposure test against your own app</h2>
+<p>Do this against your real project, through the same client your app uses.</p>
+<ol><li><strong>List your buckets and their visibility.</strong> In the dashboard or via the API, note which buckets are <strong>public</strong>. For each public bucket, confirm it contains *only* genuinely public assets. If any private file lives in a public bucket, that file is already exposed — move it and rotate anything sensitive.</li><li><strong>Upload a private file as User A</strong> into a private bucket, and note its exact path.</li><li><strong>Open the object's URL signed out.</strong> A private-bucket object served without a valid signed URL must be <strong>refused</strong>. If the raw public URL returns the file, the bucket isn't actually private.</li><li><strong>Fetch it as User B</strong> through the ordinary client (or request a signed URL as User B). The storage policy must <strong>deny</strong> it. If User B receives User A's file, your policy isn't scoped to the owner.</li><li><strong>Positive control:</strong> User A can still read their own file.</li></ol>
+<p>Do not run this with a service-role key — it bypasses storage policies just as it bypasses table RLS, so it proves nothing about an ordinary user. Use synthetic files, never real customer data.</p>
+<p>If a non-owner or a signed-out request gets the file, keep the exact request, identities, and a minimal fixture, and turn it into a test before you change the policy or the bucket.</p>
+<h2>Know what green does — and does not — mean</h2>
+<p>A passing test is evidence for <strong>one bucket, one operation, on the configuration you have now.</strong> It is not a storage audit.</p>
+<p>It does not cover your other buckets, INSERT/UPDATE/DELETE on objects, image transformations, or public CDN caching of a file that was public even briefly. And it is separate from — not covered by — the <a href="https://github.com/shiptested/public-example" rel="noopener">table RLS test</a>: securing <code>documents</code> says nothing about <code>storage.objects</code>. You need both.</p>
+<p>The goal is not to call storage "secure." It's to preserve a falsifiable statement:</p>
+<blockquote>A file in a private bucket is refused to a signed-out request and to a non-owner, while its owner can still read it.</blockquote>
+<p>Your prototype working is the start. A storage layer that refuses the wrong user is evidence you can sell behind.</p>
+<p><strong><a href="https://github.com/shiptested/public-example?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=storage_exposure&amp;utm_term=example" rel="noopener">Inspect the RLS policy model</a></strong></p>
+<p><strong><a href="https://shiptested.github.io/?utm_source=shiptested&amp;utm_medium=article&amp;utm_campaign=gate_1&amp;utm_content=storage_exposure&amp;utm_term=checklist" rel="noopener">Run the broader launch-readiness checklist</a></strong></p>
+<p>Sources: <a href="https://supabase.com/docs/guides/storage/security/access-control" rel="noopener">Supabase Storage access control</a> and <a href="https://supabase.com/docs/guides/database/postgres/row-level-security" rel="noopener">Row Level Security</a>.</p>
   <div class="cta">
     <p>Test this on your own app before you sell it.</p>
     <div class="cta-row">
@@ -143,7 +114,7 @@ const supabase = createServerClient(
       <a class="btn ghost" href="https://shiptested.github.io/checklist/">The full launch checklist</a>
     </div>
   </div>
-  <nav class="related" aria-label="Related teardowns"><h2>More teardowns</h2><ul><li><a href="/articles/supabase-rls-two-user-test/">Test Supabase RLS with two users &#8594;</a></li><li><a href="/articles/success-url-not-proof-of-payment/">A success URL is not proof of payment &#8594;</a></li><li><a href="/articles/webhook-idempotency/">One webhook, five deliveries, one entitlement &#8594;</a></li><li><a href="/articles/verify-webhook-signature/">Verify a webhook signature before you trust it &#8594;</a></li><li><a href="/articles/secrets-in-the-client-bundle/">Which secrets does your build ship to the browser? &#8594;</a></li><li><a href="/articles/supabase-storage-bucket-exposure/">Your table RLS doesn't protect your files &#8594;</a></li><li><a href="/articles/">See all teardowns &#8594;</a></li></ul></nav>
+  <nav class="related" aria-label="Related teardowns"><h2>More teardowns</h2><ul><li><a href="/articles/supabase-rls-two-user-test/">Test Supabase RLS with two users &#8594;</a></li><li><a href="/articles/success-url-not-proof-of-payment/">A success URL is not proof of payment &#8594;</a></li><li><a href="/articles/webhook-idempotency/">One webhook, five deliveries, one entitlement &#8594;</a></li><li><a href="/articles/verify-webhook-signature/">Verify a webhook signature before you trust it &#8594;</a></li><li><a href="/articles/service-role-key-bypasses-rls/">The service-role key turns off your RLS &#8594;</a></li><li><a href="/articles/secrets-in-the-client-bundle/">Which secrets does your build ship to the browser? &#8594;</a></li><li><a href="/articles/">See all teardowns &#8594;</a></li></ul></nav>
 </div></article>
 
 <footer><div class="wrap foot-in">
